@@ -13,6 +13,8 @@ parser.add_argument('--lr', type=float, default=1e-5, help='learning rate [defau
 parser.add_argument('--batch_size', type=int, default=128, help='batch size [default: 128]')
 parser.add_argument('--num_classes', type=int, default=5, help='The number of classes [default: 5]')
 parser.add_argument('--model_name', type=str, default='ResNet34', help='Call model name [default: ResNet34]')
+parser.add_argument('--pre_train', type=int, default=1, help='Pre training mode [default: 1]')
+parser.add_argument('--data', type=str, default='', help='Dataset path [default: flower]')
 
 args = parser.parse_args()
 device = torch.device('cuda:' + '{}'.format(args.gpu) if torch.cuda.is_available() else 'cpu')
@@ -21,7 +23,7 @@ if torch.cuda.is_available() is not True:
 torch.manual_seed(args.seed)
 
 Trainer = Optim(device, args.lr, args.num_classes, args.epochs, args.batch_size, args.model_name)
-load = os.path.join('Parameters/'+'resnet', args.model_name+".pth")
+load = os.path.join('Parameters/'+args.data, args.model_name+".pth")
 
 if args.model_name == 'ResNet18':
     model = ResNet18(args.num_classes)
@@ -35,10 +37,11 @@ else:
     raise ValueError(f"Unknown model name: {args.model_name}")
 
 model = model.to(device)
-train_path = './data/flower_photos'
+train_path = './data/'+args.data
 try:
     model.load_state_dict(torch.load(load))
-    model, history = Trainer.Train(train_path, model)
 except:
-    model, history = Trainer.Train(train_path)
+        model, history = Trainer.Train(train_path)
+if args.pre_train==1:
+    model, history = Trainer.Train(train_path, model)
 

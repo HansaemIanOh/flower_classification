@@ -45,7 +45,9 @@ class Optim:
             transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1),
             transforms.ToTensor()
         ])
+        print("===== Model name is {} =====".format(model_name))
     def Train(self, train_path, model=None):
+        self.train_path = train_path
         def N2T(data): 
             # data = np.moveaxis(data, -1, 1)
             data = data.cpu().detach().numpy()
@@ -53,14 +55,16 @@ class Optim:
         def D2H(data): 
             data = data.cpu().detach().numpy()
             return torch.nn.functional.one_hot(torch.tensor(data, device=self.device), num_classes=self.num_classes)
-        
         # ==================== 
-        dataset = ImageFolder(train_path, transform=self.data_transforms)
+        train_dataset = ImageFolder(train_path+'/train', transform=self.data_transforms)
+        valid_dataset = ImageFolder(train_path+'/valid', transform=self.data_transforms)
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4)
+        valid_loader = DataLoader(valid_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4)
         # # 라벨 목록 가져오기
-        # class_names = dataset.classes
+        # class_names = train_dataset.classes
 
         # # 각 데이터의 라벨 개수 집계
-        # label_counts = Counter([label for _, label in dataset])
+        # label_counts = Counter([label for _, label in train_dataset])
 
         # # 결과 출력
         # for class_name, count in zip(class_names, [label_counts[i] for i in range(len(class_names))]):
@@ -73,12 +77,12 @@ class Optim:
         # Class: tulips, Count: 799
         # '''
         # exit()
-        dataset_size = len(dataset)
-        indices = list(range(dataset_size))
-        train_indices, valid_indices = train_test_split(indices, test_size=0.2, random_state=42)
-        train_subset = Subset(dataset, train_indices)
-        valid_subset = Subset(dataset, valid_indices)
-        train_loader = DataLoader(train_subset, batch_size=self.batch_size, shuffle=True, num_workers=4)
+        # dataset_size = len(dataset)
+        # indices = list(range(dataset_size))
+        # train_indices, valid_indices = train_test_split(indices, test_size=0.2, random_state=42)
+        # train_subset = Subset(dataset, train_indices)
+        # valid_subset = Subset(dataset, valid_indices)
+        # train_loader = DataLoader(train_subset, batch_size=self.batch_size, shuffle=True, num_workers=4)
         # DataLoader에서 배치를 순회하며 라벨 확인
         # ====================
         # for batch_idx, (x, y) in enumerate(train_loader):
@@ -89,7 +93,7 @@ class Optim:
         #     print('---')
         # exit()
         # ====================
-        valid_loader = DataLoader(valid_subset, batch_size=self.batch_size, shuffle=False, num_workers=4)
+        # valid_loader = DataLoader(valid_subset, batch_size=self.batch_size, shuffle=False, num_workers=4)
         # ====================
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr, amsgrad='amsgrad')
         if model is not None:
@@ -156,6 +160,6 @@ class Optim:
         # ====================
         return loss, accuracy
     def Save(self, model):
-        os.makedirs('Parameters/'+'resnet', exist_ok=True)
-        save = os.path.join('Parameters/'+'resnet', self.model_name+".pth")
+        os.makedirs('Parameters/'+ self.train_path, exist_ok=True)
+        save = os.path.join('Parameters/'+ self.train_path, self.model_name+".pth")
         torch.save(model.state_dict(), save)
